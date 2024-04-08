@@ -1,83 +1,65 @@
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
 #include <queue>
-
-#include "ServerClass.h"
-#include "CustomerClass.h"
-#include "ServerListClass.h"
 #include "CustomerQueueClass.h"
+#include "ServerListClass.h"
 
 using namespace std;
 
-int main() 
-{
-  // Get inputs
-  int numServers;
-  int transactionTime;
-  int arrivalInterval;
-  int simTime;
-  
-  cin >> numServers >> transactionTime >> arrivalInterval >> simTime;
+int main() {
+    int numServers, serverTransactionTime, timeBetweenArrivals, simulationTime;
+    int customersArrived = 0;
 
-  // Initialize server list
-  ServerListClass serverList;
+    cout << "Enter the number of time units for the simulation: ";
+    cin >> simulationTime;
+    cout << "Enter the number of servers: ";
+    cin >> numServers;
+    cout << "Enter the server transaction time units: ";
+    cin >> serverTransactionTime;
+    cout << "Enter time units between customer arrivals: ";
+    cin >> timeBetweenArrivals;
 
-  // Set transaction parameters
-  serverList.setTransactionTime(transactionTime);
+    ServerListClass serverList(numServers, serverTransactionTime);
+    CustomerQueueClass customerQueue;
+    customerQueue.setTimeBetweenArrival(timeBetweenArrivals);
 
-  // Allocate server list
-  for(int i=0; i<numServers; i++) 
-  {
-    ServerClass server;
-    serverList.addServerToList(server);
-  }
+    srand(time(NULL));
 
-  // Initialize customer queue 
-  CustomerQueueClass custQueue;
+    cout << "---------------------------------------------------------------" << endl;
 
-  // Set arrival time parameters 
-  custQueue.setTimeBetweenArrival(arrivalInterval);
+    for (int currentTime = 0; currentTime < simulationTime; currentTime++) {
+        pair<int, int> serverCustomerPair = serverList.updateBusyServerTransactionTimes();
+        if (serverCustomerPair.first != -1) {
+            cout << "From server: " << serverCustomerPair.first << " customer " << serverCustomerPair.second << " departed at time unit " << currentTime << endl;
+        }
 
-  // Run simulation
-  int totalArrived = 0;
-  for(int i=0; i<simTime; i++) 
-  {
-    // Update server transactions
-    auto ids = serverList.updateBusyServerTransactionTime(); 
+        customerQueue.updateCustomerWaitTime();
 
-    // Update customer wait times
-    custQueue.updateCustomerWaitTime(); 
+        if (customerQueue.hasCustomerArrived()) {
+            CustomerClass newCustomer;
+            int newCustomerID = customerQueue.addCustomerToQueue(newCustomer);
+            customersArrived++;
+            cout << "Customer number: " << newCustomerID << " arrived at time unit: " << currentTime << endl;
+        }
 
-    // Check for new customer arrival
-    if(custQueue.hasCustomerArrived(i)) 
-    {
-      CustomerClass cust;
-      custQueue.addCustomerToQueue(cust);
-      totalArrived++;
+        int freeServer = serverList.findFreeServer();
+        if (freeServer != -1 && customerQueue.customersQueued() > 0) {
+            CustomerClass customer = customerQueue.removeCustomerFromQueue();
+            serverList.assignCustomerToFreeServer(customer);
+        }
     }
 
-    // Assign customer if possible
-    int freeServer = serverList.findFreeServer();
-    if(freeServer != -1 && custQueue.customersQueued() != 0)
-    {
-      CustomerClass cust;
-      custQueue.removeCustomerFromQueue(); 
-      serverList.assignCustomerToServer(&cust);
-    }
-  }
+    cout << "---------------------------------------------------------------" << endl;
 
-  // Get total customers served
-  int totalServed = serverList.getTotalCustomersServed();
+    int customersLeftInQueue = customerQueue.customersQueued() + 1;
+    cout << "Number of customers left in queue: " << customersLeftInQueue << endl;
+    cout << "Number of customers that arrived: " << customersArrived << endl;
+    cout << "Number of customers who completed a transaction: " << serverList.getTotalCustomersServed() << endl;
 
-  // Calculate results
-  int remaining = custQueue.customersQueued();
-  int totalWait = custQueue.customerQueueWaitTimeRemaining(); 
-  double avgWait = (double)totalWait / (double)totalServed;
+    double totalWaitTime = serverList.getTotalWaitTime();
+    double averageWaitTime = (double)totalWaitTime / serverList.getTotalCustomersServed();
+    cout << "Average wait time for customers in the queue: " << averageWaitTime << endl;
 
-  // Display results
-  cout << "Customers Remaining: " << remaining << "\n";
-  cout << "Total Customers: " << totalArrived << "\n";
-  cout << "Total Served: " << totalServed << "\n";
-  cout << "Average Wait: " << avgWait << "\n";
-
-  return 0;
+    return 0;
 }

@@ -1,29 +1,17 @@
-using namespace std;
+#ifndef CUSTOMERCLASS_H
+#define CUSTOMERCLASS_H
 
-class CustomerClass
-{
+class CustomerClass {
 private:
-    int customerID = 0;
-    int waitTime = 0;
+    static int nextCustomerID;
+    int customerID;
+    int waitTime;
 
 public:
-	void setCustomerID()
-    {
-        customerID++;
-    }
-
-	int getCustomerID()
-    {
-        return customerID;
-    }
-
-	void updateWaitTime()
-    {
-        waitTime++;
-    }
-
-    int getWaitTime()
-    {
-        return waitTime;
-    }
+    CustomerClass();
+    int getCustomerID() const;
+    void updateWaitTime();
+    int getWaitTime() const;
 };
+
+#endif
